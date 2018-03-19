@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 using risersoft.shared.cloud;
 using risersoft.shared.portable.Models.Gst;
 using Risersoft.API.GSTN.Public;
+using Risersoft.API.GSTN;
+using Newtonsoft.Json;
+using System.Net;
 
 namespace GSTNirvana.API.Console
 {
@@ -21,12 +24,13 @@ namespace GSTNirvana.API.Console
 		public static void Main()
 		{
 
-			clsClientCredTokenProvider provider = new clsClientCredTokenProvider("4AFKA8#EDAXA", "753RPM", "http://login.risersoft.com", true);
-			var token = provider.AuthenticateAsync().Result;
+            //clsClientCredTokenProvider provider = new clsClientCredTokenProvider("3U#R62K9J7SR", "KXAFHS", "http://localhost:11626", true);
+            clsClientCredTokenProvider provider = new clsClientCredTokenProvider("4AFKA8#EDAXA", "753RPM", "http://login.risersoft.com", true);
+            var token = provider.AuthenticateAsync().Result;
 			WebApiClientToken client = new WebApiClientToken(provider.ClientId, provider.TokenResponse.AccessToken);
 
 
-            System.Console.WriteLine("1=Post Invoice, 2=Search GSTIN");
+            System.Console.WriteLine("1=Post Invoice, 2=Search GSTIN, 3=Convert");
             String selection = System.Console.ReadLine();
             string server = "http://www.gstnirvana.com";
 
@@ -58,16 +62,26 @@ namespace GSTNirvana.API.Console
 
 
                     client.PrepareQueryString(server + "/api/data/invoice", new Dictionary<string, string>());
-                    var _info = client.Post<GstInvoiceInfo, ResultInfo<int>>(invoice);
+                    var _info = client.Post<GstInvoiceInfo, ResultInfo<int,HttpStatusCode>>(invoice);
 
                     break;
                 case "2":
                     Dictionary<string, string> params2 = new Dictionary<string, string>();
-                    params2.Add("GSTIN", "33GSPTN0191G1ZB");
+                    params2.Add("GSTIN", "09AAACI1195H1ZK");
                     client.PrepareQueryString(server + "/api/data/gstreginfo", params2);
-                    var _info2 = client.Get<ResultInfo<TaxPayerModel>>();
+                    var _info2 = client.Get<ResultInfo<TaxPayerModel,HttpStatusCode>>();
+                    string str2 = JsonConvert.SerializeObject(_info2);
+                    System.Console.WriteLine(str2);
 
                     break;
+                case "3":
+                    var json = System.IO.File.ReadAllText("b2bin.json");
+                    var client3 = new MxApiClient(server + "/api/convert");
+                    string str3 = client3.Json2CSV(json, "gstr1", "b2b").Data;
+
+                    System.Console.WriteLine(str3);
+                    break;
+
 
             }
 
